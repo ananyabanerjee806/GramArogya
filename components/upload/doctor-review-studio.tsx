@@ -14,6 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { savePrescription } from "@/actions/prescriptions";
+import { checkDrugInteractions } from "@/lib/clinical/safety";
+import { DrugInteractionCard } from "@/components/clinical/drug-interaction-card";
+import { GenericSubstitutePill } from "@/components/clinical/generic-substitute-pill";
+import { VoiceDictationButton } from "@/components/clinical/voice-dictation-button";
+import { WhatsAppShareModal } from "@/components/prescriptions/whatsapp-share-modal";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
@@ -35,7 +40,8 @@ import {
   RotateCcw,
   ShieldCheck,
   HelpCircle,
-  Pill
+  Pill,
+  MessageSquare
 } from "lucide-react";
 import { QualityIndicator } from "./quality-indicator";
 
@@ -78,6 +84,10 @@ export function DoctorReviewStudio({
   const [newTagInput, setNewTagInput] = useState<string>("");
   const [important, setImportant] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+
+  // Real-time Drug-to-Drug Interaction Analysis
+  const drugInteractions = checkDrugInteractions(medicines);
 
   // Helper for medicine rows
   const handleAddMedicine = () => {
@@ -103,8 +113,43 @@ export function DoctorReviewStudio({
     setMedicines(updated);
   };
 
+  const handleApplyGeneric = (index: number, genericName: string) => {
+    const updated = [...medicines];
+    updated[index] = { ...updated[index], name: genericName };
+    setMedicines(updated);
+    toast.success(`Switched to generic: ${genericName}`);
+  };
+
   const handleRemoveMedicine = (index: number) => {
     setMedicines(medicines.filter((_, idx) => idx !== index));
+  };
+
+  const handleVoiceDictation = (spokenText: string) => {
+    if (!spokenText.trim()) return;
+
+    // Check if spoken text sounds like a medicine or note
+    if (
+      spokenText.toLowerCase().includes("tab") ||
+      spokenText.toLowerCase().includes("cap") ||
+      spokenText.toLowerCase().includes("syp") ||
+      spokenText.toLowerCase().includes("mg")
+    ) {
+      setMedicines([
+        ...medicines,
+        {
+          name: spokenText.split("-")[0]?.replace(/tab|cap|syp/gi, "").trim() || spokenText,
+          dosage: spokenText.match(/\d+\s*(mg|ml|g|mcg)/i)?.[0] || "As directed",
+          frequency: spokenText.includes("day") || spokenText.includes("tds") || spokenText.includes("sos") || spokenText.includes("times")
+            ? spokenText
+            : "1 tablet once daily",
+          isUncertain: false,
+        },
+      ]);
+      toast.success(`Added voice dictated medicine: ${spokenText}`);
+    } else {
+      setDoctorNotes((prev) => (prev ? `${prev}. ${spokenText}` : spokenText));
+      toast.success(`Added voice dictation to doctor notes`);
+    }
   };
 
   const handleAddTag = (e: React.KeyboardEvent | React.MouseEvent) => {
@@ -167,6 +212,22 @@ export function DoctorReviewStudio({
 
   const ocrConfidence = analysis.ocrResult;
 
+  const previewPrescriptionObject = {
+    id: "preview-id",
+    patientId: selectedPatient.id,
+    imageUrl,
+    rawOcr,
+    correctedText,
+    aiSummary: summary,
+    medicinesJson: medicines,
+    doctorNotes,
+    tags,
+    important,
+    createdAt: new Date().toISOString(),
+    patientName: selectedPatient.name,
+    patientPhone: selectedPatient.phone,
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Patient Header Banner */}
@@ -190,7 +251,18 @@ export function DoctorReviewStudio({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsWhatsAppModalOpen(true)}
+            className="gap-1.5 text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-300 dark:border-emerald-800 font-semibold"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+            WhatsApp Preview
+          </Button>
+
           <Button
             type="button"
             variant="outline"
@@ -199,7 +271,7 @@ export function DoctorReviewStudio({
             className="gap-1.5 text-xs text-slate-600"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Re-scan / New Image
+            Re-scan
           </Button>
 
           <Button
@@ -208,10 +280,10 @@ export function DoctorReviewStudio({
             size="default"
             onClick={handleSave}
             disabled={isSaving}
-            className="gap-2 font-bold shadow-md min-w-[160px]"
+            className="gap-2 font-bold shadow-md min-w-[150px]"
           >
             <Save className="w-4 h-4" />
-            {isSaving ? "Saving Record..." : "Confirm & Save Record"}
+            {isSaving ? "Saving Record..." : "Confirm & Save"}
           </Button>
         </div>
       </div>
@@ -246,7 +318,7 @@ export function DoctorReviewStudio({
             </div>
           </div>
 
-          {/* Raw Tesseract OCR & Confidence Indicator (Phase 1 & Phase 2) */}
+          {/* Raw Tesseract OCR & Confidence Indicator */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:bg-slate-900 dark:border-slate-800">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -280,7 +352,7 @@ export function DoctorReviewStudio({
               </Button>
             </div>
 
-            {/* Uncertain Words Badges (Phase 2 Requirement) */}
+            {/* Uncertain Words Badges */}
             {ocrConfidence?.uncertainWords && ocrConfidence.uncertainWords.length > 0 && (
               <div className="mb-3 p-2.5 rounded-lg bg-amber-50/70 border border-amber-200/70 dark:bg-amber-950/30 dark:border-amber-900">
                 <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-200 mb-1.5 flex items-center gap-1">
@@ -301,7 +373,7 @@ export function DoctorReviewStudio({
             {showRawOcr && (
               <div className="mt-2">
                 <p className="text-[11px] text-slate-400 mb-1 font-mono">
-                  Unmodified Tesseract OCR Output (Preserved for Doctor Review):
+                  Unmodified Tesseract OCR Output:
                 </p>
                 <pre className="p-3 rounded-lg bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto whitespace-pre-wrap max-h-48 border border-slate-800 leading-relaxed">
                   {rawOcr || "No raw text detected."}
@@ -314,29 +386,37 @@ export function DoctorReviewStudio({
         {/* Right Pane: Structured Medical Data & Interactive Verification (7 Cols) */}
         <div className="lg:col-span-7 space-y-4">
           
-          {/* Authority Banner */}
-          <div className="rounded-xl bg-sky-50/80 border border-sky-200/80 p-3.5 dark:bg-sky-950/40 dark:border-sky-800 flex items-center justify-between">
+          {/* Authority Banner + Voice Dictate */}
+          <div className="rounded-xl bg-sky-50/80 border border-sky-200/80 p-3.5 dark:bg-sky-950/40 dark:border-sky-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-xs text-sky-800 dark:text-sky-300 font-medium">
               <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0" />
               <span>
-                <strong>Doctor Verification:</strong> You can edit any medicine, dosage, or note below.
+                <strong>Doctor Authority:</strong> Verified medications and dosage.
               </span>
             </div>
 
-            {/* Star as Important Toggle (Phase 2) */}
-            <Button
-              type="button"
-              variant={important ? "default" : "outline"}
-              size="sm"
-              onClick={() => setImportant(!important)}
-              className={`gap-1.5 text-xs font-semibold shrink-0 ${
-                important ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-500" : "text-slate-600"
-              }`}
-            >
-              <Star className={`w-3.5 h-3.5 ${important ? "fill-white text-white" : "text-amber-500"}`} />
-              {important ? "⭐ Important Record" : "Mark as Important"}
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              {/* AI Voice-to-Prescription Dictation Assistant */}
+              <VoiceDictationButton onTranscriptReceived={handleVoiceDictation} />
+
+              {/* Star as Important Toggle */}
+              <Button
+                type="button"
+                variant={important ? "default" : "outline"}
+                size="sm"
+                onClick={() => setImportant(!important)}
+                className={`gap-1 text-xs font-semibold shrink-0 ${
+                  important ? "bg-amber-500 hover:bg-amber-600 text-white border-amber-500" : "text-slate-600"
+                }`}
+              >
+                <Star className={`w-3.5 h-3.5 ${important ? "fill-white text-white" : "text-amber-500"}`} />
+                {important ? "⭐ Important" : "Star"}
+              </Button>
+            </div>
           </div>
+
+          {/* Clinical Safety Alert: Real-time Drug-to-Drug Interaction Engine */}
+          <DrugInteractionCard warnings={drugInteractions} />
 
           {/* Clinical Summary */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:bg-slate-900 dark:border-slate-800 space-y-2">
@@ -356,7 +436,7 @@ export function DoctorReviewStudio({
             />
           </div>
 
-          {/* Structured Medicines Table (Smart Medicine Recognition - Phase 2) */}
+          {/* Structured Medicines Table */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:bg-slate-900 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -460,6 +540,12 @@ export function DoctorReviewStudio({
                       />
                     </div>
                   </div>
+
+                  {/* Generic Substitute Pill (1-Click Switcher) */}
+                  <GenericSubstitutePill
+                    medicineName={med.name}
+                    onApplyGeneric={(generic) => handleApplyGeneric(idx, generic)}
+                  />
                 </div>
               ))}
             </div>
@@ -474,19 +560,19 @@ export function DoctorReviewStudio({
               value={correctedText}
               onChange={(e) => setCorrectedText(e.target.value)}
               placeholder="Full digitized prescription text..."
-              rows={4}
+              rows={3}
               className="font-mono text-xs leading-relaxed"
             />
           </div>
 
-          {/* Tags & Doctor Notes (Phase 2) */}
+          {/* Tags & Doctor Notes */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             {/* Tags Section */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:bg-slate-900 dark:border-slate-800 space-y-3">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-sky-600" />
-                Prescription Tags (Phase 2)
+                Prescription Tags
               </label>
 
               <div className="flex flex-wrap gap-1.5 min-h-[36px]">
@@ -531,12 +617,12 @@ export function DoctorReviewStudio({
             {/* Doctor's Personal Notes Section */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:bg-slate-900 dark:border-slate-800 space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
-                Doctor's Personal Notes (Phase 2)
+                Doctor's Personal Notes & Advice
               </label>
               <Textarea
                 value={doctorNotes}
                 onChange={(e) => setDoctorNotes(e.target.value)}
-                placeholder="e.g. Follow-up after 5 days, encourage fluid intake, monitor temperature..."
+                placeholder="e.g. Follow-up after 5 days, encourage fluid intake..."
                 rows={3}
                 className="text-xs"
               />
@@ -568,6 +654,14 @@ export function DoctorReviewStudio({
 
         </div>
       </div>
+
+      {/* WhatsApp Share Modal */}
+      <WhatsAppShareModal
+        open={isWhatsAppModalOpen}
+        onOpenChange={setIsWhatsAppModalOpen}
+        prescription={previewPrescriptionObject as any}
+        patient={selectedPatient}
+      />
     </div>
   );
 }

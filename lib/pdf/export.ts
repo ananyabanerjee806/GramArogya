@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import { Prescription, Patient } from '@/types';
 import { formatDate } from '@/lib/utils';
+import { findGenericAlternative } from '@/lib/clinical/safety';
+import { translateFrequencyToRegional } from '@/lib/whatsapp/share';
 
 export function generatePrescriptionPDF(
   prescription: Prescription,
@@ -71,19 +73,19 @@ export function generatePrescriptionPDF(
   doc.setTextColor(2, 132, 199);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('PRESCRIBED MEDICATIONS & DOSAGE (Rx)', 14, y);
+  doc.text('PRESCRIBED MEDICATIONS & DOSAGE SCHEDULE (Rx)', 14, y);
   y += 5;
 
   // Table Header
   doc.setFillColor(241, 245, 249);
   doc.rect(12, y, pageWidth - 24, 8, 'F');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(51, 65, 85);
-  doc.text('#', 16, y + 5.5);
-  doc.text('Medicine / Drug Name', 25, y + 5.5);
-  doc.text('Dosage / Strength', 105, y + 5.5);
-  doc.text('Frequency & Instructions', 145, y + 5.5);
+  doc.text('#', 15, y + 5.5);
+  doc.text('Medicine / Generic Composition', 22, y + 5.5);
+  doc.text('Dosage', 100, y + 5.5);
+  doc.text('Schedule & Timing (दवाइयों का समय)', 132, y + 5.5);
   y += 9;
 
   const meds = prescription.medicinesJson || [];
@@ -95,44 +97,47 @@ export function generatePrescriptionPDF(
     y += 10;
   } else {
     meds.forEach((med, idx) => {
-      doc.setFillColor(idx % 2 === 0 ? 255 : 248, 250, 252);
-      doc.rect(12, y, pageWidth - 24, 9, 'F');
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(15, 23, 42);
+      const genericAlt = findGenericAlternative(med.name);
+      const { timing } = translateFrequencyToRegional(med.frequency || '');
 
-      doc.text(`${idx + 1}.`, 16, y + 6);
-      doc.text(med.name || '-', 25, y + 6);
-      doc.text(med.dosage || '-', 105, y + 6);
-      doc.text(med.frequency || '-', 145, y + 6);
-      y += 9.5;
+      doc.setFillColor(idx % 2 === 0 ? 255 : 248, 250, 252);
+      doc.rect(12, y, pageWidth - 24, 11, 'F');
+      
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 23, 42);
+      doc.text(`${idx + 1}.`, 15, y + 5);
+      doc.text(med.name || '-', 22, y + 5);
+
+      if (genericAlt) {
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(5, 150, 105);
+        doc.text(`Generic: ${genericAlt.genericName.slice(0, 38)}`, 22, y + 9);
+      }
+
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(30, 41, 59);
+      doc.text(med.dosage || '-', 100, y + 5);
+      doc.text(med.frequency || '-', 132, y + 5);
+
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`[${timing}]`, 132, y + 9);
+
+      y += 12;
     });
   }
 
   y += 6;
 
-  // Corrected Detailed Text
-  if (prescription.correctedText) {
-    doc.setTextColor(2, 132, 199);
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('FULL STRUCTURED PRESCRIPTION TRANSCRIPT', 14, y);
-    y += 5;
-
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(51, 65, 85);
-    const splitTranscript = doc.splitTextToSize(prescription.correctedText, pageWidth - 28);
-    doc.text(splitTranscript, 14, y);
-    y += splitTranscript.length * 4.5 + 6;
-  }
-
-  // Doctor Notes
+  // Doctor Notes & Clinical Advice
   if (prescription.doctorNotes) {
     doc.setTextColor(2, 132, 199);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('PHYSICIAN NOTES & ADVICE', 14, y);
+    doc.text('PHYSICIAN NOTES & PATIENT ADVICE (सलाह)', 14, y);
     y += 5;
 
     doc.setFillColor(254, 242, 242);
@@ -153,12 +158,12 @@ export function generatePrescriptionPDF(
     doc.setFontSize(8.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(100, 116, 139);
-    doc.text(`Categories/Tags: ${prescription.tags.join(', ')}`, 14, y);
-    y += 10;
+    doc.text(`Clinical Categories: ${prescription.tags.join(', ')}`, 14, y);
+    y += 8;
   }
 
   // Doctor Sign-off Footer
-  const footerY = Math.max(y + 10, doc.internal.pageSize.getHeight() - 30);
+  const footerY = Math.max(y + 10, doc.internal.pageSize.getHeight() - 28);
   doc.setDrawColor(203, 213, 225);
   doc.line(14, footerY, 70, footerY);
   doc.setFontSize(8.5);
@@ -167,7 +172,7 @@ export function generatePrescriptionPDF(
   doc.text("Authorized Doctor's Signature", 14, footerY + 5);
 
   doc.setFontSize(7.5);
-  doc.text('Digitized and verified with ClinicOCR Medical Document Intelligence', pageWidth - 14, footerY + 5, { align: 'right' });
+  doc.text('Digitized & Verified with ClinicOCR Medical Document Intelligence', pageWidth - 14, footerY + 5, { align: 'right' });
 
   return doc;
 }

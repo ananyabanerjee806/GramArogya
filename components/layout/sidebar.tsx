@@ -6,17 +6,24 @@ import {
   LayoutDashboard, 
   Users, 
   UploadCloud, 
-  FileText, 
   Search, 
   Sparkles,
   ShieldCheck,
   Stethoscope,
-  HeartPulse
+  Video,
+  Activity,
+  Ambulance,
+  Clock,
+  Pill,
+  Baby,
+  BarChart3,
+  Flame,
+  Radio
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-const navigationItems = [
+const coreNavigation = [
   {
     name: "Dashboard",
     href: "/dashboard",
@@ -24,22 +31,70 @@ const navigationItems = [
     badge: null,
   },
   {
-    name: "Upload Prescription",
+    name: "Scan & OCR Rx",
     href: "/upload",
     icon: UploadCloud,
-    badge: "AI Powered",
+    badge: "AI Vision",
   },
   {
-    name: "Patients Directory",
+    name: "Patients & ABHA",
     href: "/patients",
     icon: Users,
     badge: null,
   },
   {
-    name: "Prescriptions & Search",
+    name: "Prescription Archive",
     href: "/prescriptions",
     icon: Search,
     badge: null,
+  },
+];
+
+const ruralHealthEcosystem = [
+  {
+    name: "Assisted Teleconsult",
+    href: "/teleconsult",
+    icon: Video,
+    badge: "Live Video",
+    badgeVariant: "default" as const,
+  },
+  {
+    name: "AI Digital Triage",
+    href: "/triage",
+    icon: Activity,
+    badge: "Risk AI",
+    badgeVariant: "destructive" as const,
+  },
+  {
+    name: "Referrals & 108 SOS",
+    href: "/referrals",
+    icon: Ambulance,
+    badge: "Emergency",
+    badgeVariant: "destructive" as const,
+  },
+  {
+    name: "OPD Token Queue",
+    href: "/queue",
+    icon: Clock,
+    badge: null,
+  },
+  {
+    name: "Jan Aushadhi & Drugs",
+    href: "/pharmacy",
+    icon: Pill,
+    badge: "80% Off",
+  },
+  {
+    name: "Maternal & NCD Care",
+    href: "/maternal-ncd",
+    icon: Baby,
+    badge: "High Risk",
+  },
+  {
+    name: "District Health Map",
+    href: "/facility-analytics",
+    icon: BarChart3,
+    badge: "Analytics",
   },
 ];
 
@@ -47,87 +102,142 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 border-r border-slate-200/80 bg-white/80 backdrop-blur-md flex flex-col justify-between h-screen fixed left-0 top-0 z-30 dark:bg-slate-900/90 dark:border-slate-800">
+    <aside className="w-64 border-r border-slate-200/80 bg-white/95 backdrop-blur-md flex flex-col justify-between h-screen fixed left-0 top-0 z-30 overflow-y-auto dark:bg-slate-900/95 dark:border-slate-800">
       {/* Brand Header */}
       <div>
-        <div className="h-16 flex items-center px-6 border-b border-slate-100 dark:border-slate-800/60">
+        <div className="h-16 flex items-center px-5 border-b border-slate-100 dark:border-slate-800/60">
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-sky-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
               <Stethoscope className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-slate-300">
-                  Clinic<span className="text-sky-600">OCR</span>
+                <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-emerald-900 via-slate-800 to-teal-700 bg-clip-text text-transparent dark:from-white dark:to-emerald-400">
+                  Gram<span className="text-emerald-600">Arogya</span>
                 </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-sky-50 text-sky-600 border border-sky-200/60 dark:bg-sky-950 dark:text-sky-400 dark:border-sky-800">
-                  v2.0
+                <span className="text-[9px] uppercase font-extrabold tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950 dark:text-emerald-300">
+                  PS 26133
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 font-medium -mt-0.5">
-                Medical Document Intelligence
+                Govt. of Maharashtra Rural Health
               </p>
             </div>
           </Link>
         </div>
 
         {/* Navigation Links */}
-        <nav className="p-4 space-y-1.5">
-          <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            Main Menu
-          </div>
-          {navigationItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-            const Icon = item.icon;
+        <nav className="p-3 space-y-4">
+          <div>
+            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Clinical Core
+            </div>
+            <div className="space-y-1 mt-1">
+              {coreNavigation.map((item) => {
+                const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                const Icon = item.icon;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group",
-                  isActive
-                    ? "bg-sky-50 text-sky-700 shadow-sm shadow-sky-500/5 font-semibold dark:bg-sky-950/60 dark:text-sky-300"
-                    : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
                     className={cn(
-                      "w-4 h-4 transition-colors",
+                      "flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 group",
                       isActive
-                        ? "text-sky-600 dark:text-sky-400"
-                        : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                        ? "bg-emerald-50 text-emerald-800 shadow-sm font-semibold dark:bg-emerald-950/60 dark:text-emerald-300"
+                        : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
                     )}
-                  />
-                  <span>{item.name}</span>
-                </div>
-                {item.badge && (
-                  <Badge variant="info" className="text-[10px] px-1.5 py-0">
-                    <Sparkles className="w-2.5 h-2.5 mr-0.5 text-sky-600 animate-pulse" />
-                    {item.badge}
-                  </Badge>
-                )}
-              </Link>
-            );
-          })}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon
+                        className={cn(
+                          "w-4 h-4 transition-colors",
+                          isActive
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                        )}
+                      />
+                      <span>{item.name}</span>
+                    </div>
+                    {item.badge && (
+                      <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-emerald-100/80 text-emerald-800 border-none">
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <span>Rural Care Continuum</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            <div className="space-y-1 mt-1">
+              {ruralHealthEcosystem.map((item) => {
+                const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 group",
+                      isActive
+                        ? "bg-teal-50 text-teal-800 shadow-sm font-semibold dark:bg-teal-950/60 dark:text-teal-300"
+                        : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon
+                        className={cn(
+                          "w-4 h-4 transition-colors",
+                          isActive
+                            ? "text-teal-600 dark:text-teal-400"
+                            : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                        )}
+                      />
+                      <span>{item.name}</span>
+                    </div>
+                    {item.badge && (
+                      <span className={cn(
+                        "text-[9px] font-bold px-1.5 py-0.2 rounded-full border",
+                        item.badge === "Emergency" || item.badge === "Risk AI"
+                          ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300"
+                          : item.badge === "Live Video"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1"
+                          : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300"
+                      )}>
+                        {item.badge === "Live Video" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />}
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </nav>
       </div>
 
       {/* Footer Info Card */}
-      <div className="p-4 border-t border-slate-100 dark:border-slate-800/60">
-        <div className="rounded-xl p-3.5 bg-gradient-to-br from-slate-50 to-sky-50/40 border border-slate-200/60 dark:from-slate-900 dark:to-sky-950/20 dark:border-slate-800">
-          <div className="flex items-center gap-2 mb-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-              Doctor Verification
+      <div className="p-3 border-t border-slate-100 dark:border-slate-800/60">
+        <div className="rounded-xl p-3 bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-200/60 dark:from-slate-900 dark:to-emerald-950/20 dark:border-slate-800">
+          <div className="flex items-center gap-1.5 mb-1">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
+              ABHA & ABDM Interoperable
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 leading-relaxed dark:text-slate-400">
-            Doctor has 100% final authority. Nothing is stored automatically without review.
+          <p className="text-[10px] text-slate-500 leading-snug dark:text-slate-400">
+            Strengthening Maharashtra Public Health with Sub-Centre to DH referral continuity.
           </p>
         </div>
       </div>
     </aside>
   );
 }
+

@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { PrescriptionCard } from "@/components/prescriptions/prescription-card";
 import { PrescriptionDetailModal } from "@/components/prescriptions/prescription-detail-modal";
 import { PatientModal } from "@/components/patients/patient-modal";
+import { HealthAnalyticsChart } from "@/components/analytics/health-analytics-chart";
+import { AbhaCardModal } from "@/components/abha/abha-card-modal";
+import { RegionalTranslationSelector } from "@/components/clinical/regional-translation-selector";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,7 +23,10 @@ import {
   FileText, 
   Pill, 
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  Activity,
+  Languages
 } from "lucide-react";
 
 interface PatientDetailClientProps {
@@ -36,6 +42,7 @@ export function PatientDetailClient({
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+  const [isAbhaModalOpen, setIsAbhaModalOpen] = useState(false);
 
   // Group: Important pinned at top, then regular
   const importantPrescriptions = initialPrescriptions.filter((p) => p.important);
@@ -45,6 +52,9 @@ export function PatientDetailClient({
     setSelectedPrescription(prescription);
     setIsDetailModalOpen(true);
   };
+
+  // Extract all prescribed medications for translation
+  const allMedications = initialPrescriptions.flatMap((p) => p.medicinesJson || []);
 
   return (
     <div className="space-y-8">
@@ -74,6 +84,16 @@ export function PatientDetailClient({
                 <Badge variant="outline" className="text-xs">
                   {patient.gender}
                 </Badge>
+                
+                {/* Official ABHA Badge */}
+                <button
+                  type="button"
+                  onClick={() => setIsAbhaModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-900 border border-orange-300 hover:bg-orange-200 transition-colors dark:bg-orange-950 dark:text-orange-200 cursor-pointer"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
+                  ABHA ID: 91-8472-XXXX
+                </button>
               </div>
 
               <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 pt-1 flex-wrap">
@@ -97,12 +117,22 @@ export function PatientDetailClient({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAbhaModalOpen(true)}
+              className="gap-1.5 font-semibold text-xs border-orange-300 text-orange-800 hover:bg-orange-50 dark:text-orange-300 dark:border-orange-800"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-orange-600" />
+              View ABHA Card
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsPatientModalOpen(true)}
-              className="gap-1.5 font-semibold"
+              className="gap-1.5 font-semibold text-xs"
             >
               <Edit className="w-3.5 h-3.5" />
               Edit Details
@@ -112,7 +142,7 @@ export function PatientDetailClient({
               <Button
                 variant="primary"
                 size="sm"
-                className="gap-1.5 font-semibold shadow-sm"
+                className="gap-1.5 font-semibold shadow-sm text-xs"
               >
                 <UploadCloud className="w-4 h-4" />
                 Upload Prescription
@@ -122,7 +152,15 @@ export function PatientDetailClient({
         </div>
       </div>
 
-      {/* Pinned Important Prescriptions Section (Phase 2 Requirement) */}
+      {/* Feature 7: Patient Health Analytics & Chronic Disease Progression Tracker */}
+      <HealthAnalyticsChart patientId={patient.id} patientName={patient.name} />
+
+      {/* Feature 5: Multi-Language Regional Translation Engine */}
+      {allMedications.length > 0 && (
+        <RegionalTranslationSelector frequencies={allMedications} />
+      )}
+
+      {/* Pinned Important Prescriptions Section */}
       {importantPrescriptions.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -225,6 +263,14 @@ export function PatientDetailClient({
         onOpenChange={setIsPatientModalOpen}
         patient={patient}
         onSuccess={() => router.refresh()}
+      />
+
+      {/* Feature 9: ABHA Digital Card Modal */}
+      <AbhaCardModal
+        open={isAbhaModalOpen}
+        onOpenChange={setIsAbhaModalOpen}
+        patientName={patient.name}
+        patientPhone={patient.phone}
       />
     </div>
   );

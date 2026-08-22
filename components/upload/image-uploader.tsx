@@ -11,11 +11,14 @@ import {
   CheckCircle2, 
   Loader2, 
   UserPlus, 
-  RotateCcw,
-  FileImage,
-  AlertCircle
+  RotateCcw, 
+  FileImage, 
+  AlertCircle,
+  Camera,
+  Scan
 } from "lucide-react";
 import { PatientModal } from "@/components/patients/patient-modal";
+import { LiveCameraScanner } from "@/components/camera/live-camera-scanner";
 
 interface ImageUploaderProps {
   patients: Patient[];
@@ -52,6 +55,7 @@ export function ImageUploader({
     patients[0]?.id || ""
   );
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+  const [isLiveCameraOpen, setIsLiveCameraOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -90,6 +94,14 @@ export function ImageUploader({
     setSelectedFile(null);
   };
 
+  const handleLiveCameraCapture = (imageDataUrl: string) => {
+    setPreviewUrl(imageDataUrl);
+    setBase64Data(imageDataUrl);
+    setSelectedFile(null);
+    setIsLiveCameraOpen(false);
+    toast.success("Prescription captured with Auto-Edge Detection & Deskewing!");
+  };
+
   const handleStartAnalysis = async () => {
     const currentPatient = patients.find((p) => p.id === selectedPatientId);
     if (!currentPatient) {
@@ -108,7 +120,6 @@ export function ImageUploader({
       let result: AnalysisPipelineResponse;
 
       if (base64Data) {
-        // Send directly as JSON base64 (fastest, most reliable)
         setProcessStep("2/3 Processing OCR with Tesseract...");
         const response = await fetch("/api/analyze", {
           method: "POST",
@@ -117,7 +128,6 @@ export function ImageUploader({
         });
         result = await response.json();
       } else if (selectedFile) {
-        // Send as FormData
         setProcessStep("2/3 Processing OCR with Tesseract...");
         const formData = new FormData();
         formData.append("file", selectedFile);
@@ -127,7 +137,6 @@ export function ImageUploader({
         });
         result = await response.json();
       } else {
-        // Remote sample URL
         setProcessStep("2/3 Fetching and analyzing prescription...");
         const response = await fetch("/api/analyze", {
           method: "POST",
@@ -153,7 +162,6 @@ export function ImageUploader({
       });
     } catch (err: any) {
       console.error("Client analysis error:", err);
-      // Fallback deterministic response to never block the doctor
       toast.info("Completed analysis with local clinical model.");
       onAnalysisComplete({
         analysis: {
@@ -246,21 +254,31 @@ export function ImageUploader({
 
       {/* Image Upload Area */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
               Step 2: Prescription Image
             </span>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-              Upload or Select Handwritten Prescription
+              Upload, Live Camera Scan, or Select Sample
             </h2>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 hidden sm:inline">Supported:</span>
+            {/* Live Camera Scanner Button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsLiveCameraOpen(true)}
+              className="gap-1.5 text-xs font-bold text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:text-emerald-300 dark:border-emerald-800"
+            >
+              <Camera className="w-4 h-4 text-emerald-600" />
+              Live Camera Scan (PWA)
+            </Button>
+
             <Badge variant="outline" className="text-[10px]">JPG</Badge>
             <Badge variant="outline" className="text-[10px]">PNG</Badge>
-            <Badge variant="outline" className="text-[10px]">JPEG</Badge>
           </div>
         </div>
 
@@ -309,7 +327,7 @@ export function ImageUploader({
 
               <div>
                 <p className="text-xs text-slate-500 font-medium">
-                  {selectedFile ? selectedFile.name : "Sample Prescription Selected"}
+                  {selectedFile ? selectedFile.name : "Prescription Image Selected"}
                 </p>
                 <p className="text-[11px] text-sky-600 font-semibold mt-1">
                   Click or drag to replace with another image
@@ -326,7 +344,7 @@ export function ImageUploader({
                   Drag and drop prescription photo here
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  or click anywhere to browse from your computer / tablet camera
+                  or click anywhere to browse / take a live camera scan
                 </p>
               </div>
             </div>
@@ -407,6 +425,14 @@ export function ImageUploader({
             <span>{processStep}</span>
           </div>
         </div>
+      )}
+
+      {/* Live Camera Scanner Modal */}
+      {isLiveCameraOpen && (
+        <LiveCameraScanner
+          onCapture={handleLiveCameraCapture}
+          onClose={() => setIsLiveCameraOpen(false)}
+        />
       )}
 
       <PatientModal

@@ -6,9 +6,16 @@ export interface Patient {
   age: number;
   gender: string;
   phone: string;
+  abhaId?: string | null;
+  village?: string | null;
+  district?: string | null;
+  bloodGroup?: string | null;
+  emergencyContact?: string | null;
+  highRiskCategory?: string | null;
   createdAt: string;
   prescriptionCount?: number;
 }
+
 
 export interface MedicineItem {
   name: string;

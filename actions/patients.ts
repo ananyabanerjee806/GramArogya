@@ -32,6 +32,12 @@ function getFallbackPatients(searchQuery?: string): Patient[] {
       age: p.age,
       gender: p.gender,
       phone: p.phone,
+      abhaId: p.abhaId,
+      village: p.village,
+      district: p.district,
+      bloodGroup: p.bloodGroup,
+      emergencyContact: p.emergencyContact,
+      highRiskCategory: p.highRiskCategory,
       createdAt: typeof p.createdAt === 'string' ? p.createdAt : p.createdAt.toISOString(),
       prescriptionCount: count,
     };
@@ -49,6 +55,12 @@ export async function getPatients(searchQuery?: string): Promise<Patient[]> {
             age: patients.age,
             gender: patients.gender,
             phone: patients.phone,
+            abhaId: patients.abhaId,
+            village: patients.village,
+            district: patients.district,
+            bloodGroup: patients.bloodGroup,
+            emergencyContact: patients.emergencyContact,
+            highRiskCategory: patients.highRiskCategory,
             createdAt: patients.createdAt,
             prescriptionCount: sql<number>`count(${prescriptions.id})::int`,
           })
@@ -76,6 +88,12 @@ export async function getPatients(searchQuery?: string): Promise<Patient[]> {
             age: r.age,
             gender: r.gender,
             phone: r.phone,
+            abhaId: r.abhaId,
+            village: r.village,
+            district: r.district,
+            bloodGroup: r.bloodGroup,
+            emergencyContact: r.emergencyContact,
+            highRiskCategory: r.highRiskCategory,
             createdAt: r.createdAt.toISOString(),
             prescriptionCount: r.prescriptionCount || 0,
           }));
@@ -90,6 +108,7 @@ export async function getPatients(searchQuery?: string): Promise<Patient[]> {
     return getFallbackPatients(searchQuery);
   }
 }
+
 
 export async function getPatientById(id: string): Promise<Patient | null> {
   try {
