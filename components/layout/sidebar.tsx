@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import { 
   LayoutDashboard, 
   Users, 
@@ -18,7 +20,9 @@ import {
   Baby,
   BarChart3,
   Flame,
-  Radio
+  Radio,
+  LogIn,
+  KeyRound
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -96,6 +100,13 @@ const ruralHealthEcosystem = [
     icon: BarChart3,
     badge: "Analytics",
   },
+  {
+    name: "Portal Login / Switch",
+    href: "/login",
+    icon: LogIn,
+    badge: "3 Roles",
+    badgeVariant: "default" as const,
+  },
 ];
 
 export function Sidebar() {
@@ -105,26 +116,33 @@ export function Sidebar() {
     <aside className="w-64 border-r border-slate-200/80 bg-white/95 backdrop-blur-md flex flex-col justify-between h-screen fixed left-0 top-0 z-30 overflow-y-auto dark:bg-slate-900/95 dark:border-slate-800">
       {/* Brand Header */}
       <div>
-        <div className="h-16 flex items-center px-5 border-b border-slate-100 dark:border-slate-800/60">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-sky-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-              <Stethoscope className="w-5 h-5" />
+        <div className="h-20 flex items-center px-4 border-b border-slate-100 dark:border-slate-800/60">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group w-full">
+            <div className="w-11 h-11 rounded-xl bg-white p-0.5 border border-slate-200 shadow-sm flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform dark:bg-slate-800 dark:border-slate-700">
+              <Image
+                src="/maharashtra_arogya_logo.png"
+                alt="Maharashtra Arogya Logo"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-emerald-900 via-slate-800 to-teal-700 bg-clip-text text-transparent dark:from-white dark:to-emerald-400">
+                <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white truncate">
                   Gram<span className="text-emerald-600">Arogya</span>
                 </span>
-                <span className="text-[9px] uppercase font-extrabold tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-950 dark:text-emerald-300">
+                <span className="text-[8.5px] uppercase font-extrabold px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
                   PS 26133
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-medium -mt-0.5">
-                Govt. of Maharashtra Rural Health
+              <p className="text-[9.5px] text-slate-400 font-bold truncate">
+                सार्वजनिक आरोग्य विभाग महाराष्ट्र
               </p>
             </div>
           </Link>
         </div>
+
 
         {/* Navigation Links */}
         <nav className="p-3 space-y-4">
