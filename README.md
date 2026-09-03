@@ -22,7 +22,7 @@ The platform integrates an offline-capable optical character recognition (OCR) a
 > **Current Project Status (Prototype / MVP)**:  
 > GramArogya is designed around the vision:  
 > *"A closed-loop rural referral platform that ensures a patient is not merely referred, but accepted by a capable facility and tracked until care completion."*  
-> The current repository is a **functional prototype and reference implementation** prepared for demonstration, research, and hackathon evaluation (such as Smart India Hackathon). It implements the core user interfaces, AI/OCR pipelines, referral state transitions, rule engines, and dual in-memory/PostgreSQL data persistence. It does **not** claim live production integration with government databases, hardware GPS dispatch feeds, or certified ABDM live gateways.
+> The current repository is a **functional prototype and reference implementation** prepared for demonstration, research. It implements the core user interfaces, AI/OCR pipelines, referral state transitions, rule engines, and dual in-memory/PostgreSQL data persistence. It does **not** claim live production integration with government databases, hardware GPS dispatch feeds, or certified ABDM live gateways.
 
 ---
 
