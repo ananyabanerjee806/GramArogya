@@ -67,26 +67,26 @@ GramArogya addresses these challenges through a modular web application:
 
 ```mermaid
 flowchart TD
-    A([Patient Visit / ASHA Home Visit]) --> B[AI Triage & Vitals Logging]
-    B --> C{Triage Assessment}
+    A(["Patient Visit / ASHA Home Visit"]) --> B["AI Triage & Vitals Logging"]
+    B --> C{"Triage Assessment"}
     
-    C -->|RED: Emergency| D[108 Emergency Referral Created]
-    C -->|YELLOW: Urgent| E[Specialist Teleconsult / PHC Escalation]
-    C -->|GREEN: Routine| F[Prescription & Local OPD Care]
+    C -->|RED: Emergency| D["108 Emergency Referral Created"]
+    C -->|YELLOW: Urgent| E["Specialist Teleconsult / PHC Escalation"]
+    C -->|GREEN: Routine| F["Prescription & Local OPD Care"]
 
-    D --> G[Referral Logged & Escort Assigned]
-    G --> H[Status: IN_TRANSIT]
-    H --> I[Status: ADMITTED / COMPLETED]
+    D --> G["Referral Logged & Escort Assigned"]
+    G --> H["Status: IN_TRANSIT"]
+    H --> I["Status: ADMITTED / COMPLETED"]
 
-    F --> J[Prescription Image Upload]
-    J --> K[Sharp Preprocessing + Tesseract.js OCR]
-    K --> L[Gemini 2.5 Flash / Local Rule Parser]
-    L --> M[Doctor Review Studio & Sign-Off]
-    M --> N[Jan Aushadhi Generic Substitution]
-    N --> O[WhatsApp Regional Share / PDF Export]
+    F --> J["Prescription Image Upload"]
+    J --> K["Sharp Preprocessing + Tesseract.js OCR"]
+    K --> L["Gemini 2.5 Flash / Local Rule Parser"]
+    L --> M["Doctor Review Studio & Sign-Off"]
+    M --> N["Jan Aushadhi Generic Substitution"]
+    N --> O["WhatsApp Regional Share / PDF Export"]
 
-    E --> P[Teleconsultation Queue]
-    P --> Q[Digital Consultation & e-Prescription]
+    E --> P["Teleconsultation Queue"]
+    P --> Q["Digital Consultation & e-Prescription"]
     Q --> M
 ```
 
@@ -168,23 +168,23 @@ Export & Document Utilities:
 
 ```mermaid
 graph LR
-    subgraph Client [Client / Mobile Browser]
-        UI[Next.js App Router UI]
-        Cam[Camera / File Upload]
-        Lang[Regional Language Switcher]
+    subgraph Client ["Client / Mobile Browser"]
+        UI["Next.js App Router UI"]
+        Cam["Camera / File Upload"]
+        Lang["Regional Language Switcher"]
     end
 
-    subgraph Server [Next.js Server & Actions Layer]
-        SA[Server Actions / API Routes]
-        SharpProc[Sharp Image Preprocessing]
-        Tess[Tesseract.js OCR Engine]
-        Gemini[Google Gemini 2.5 Flash]
-        RuleEngine[Fallback & Safety Engines]
+    subgraph Server ["Next.js Server & Actions Layer"]
+        SA["Server Actions / API Routes"]
+        SharpProc["Sharp Image Preprocessing"]
+        Tess["Tesseract.js OCR Engine"]
+        Gemini["Google Gemini 2.5 Flash"]
+        RuleEngine["Fallback & Safety Engines"]
     end
 
-    subgraph Data [Data Persistence]
-        MemStore[In-Memory Store (Default)]
-        NeonDB[(Neon PostgreSQL via Drizzle)]
+    subgraph Data ["Data Persistence"]
+        MemStore["In-Memory Store (Default)"]
+        NeonDB[("Neon PostgreSQL via Drizzle")]
     end
 
     UI -->|Uploads Image| Cam
