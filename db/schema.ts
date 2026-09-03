@@ -1,8 +1,17 @@
 import { pgTable, text, integer, timestamp, uuid, boolean, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
+export const households = pgTable('households', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  familyName: text('family_name').notNull(),
+  village: text('village').notNull(),
+  ashaWorker: text('asha_worker'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export const patients = pgTable('patients', {
   id: uuid('id').defaultRandom().primaryKey(),
+  householdId: uuid('household_id').references(() => households.id, { onDelete: 'set null' }),
   name: text('name').notNull(),
   age: integer('age').notNull(),
   gender: text('gender').notNull(),
@@ -14,6 +23,41 @@ export const patients = pgTable('patients', {
   emergencyContact: text('emergency_contact'),
   highRiskCategory: text('high_risk_category'), // e.g., 'ANC High Risk', 'Severe Hypertension', 'Type 2 Diabetes', 'Pediatric Malnutrition'
   createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const facilities = pgTable('facilities', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  type: text('type').notNull(), // 'Sub-Centre', 'PHC', 'CHC', 'Rural Hospital', 'District Hospital'
+  village: text('village'),
+  distanceKm: integer('distance_km').default(0), // Mock distance for demo
+  operatingStatus: text('operating_status').default('OPEN'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const facilityResources = pgTable('facility_resources', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  facilityId: uuid('facility_id').notNull().references(() => facilities.id, { onDelete: 'cascade' }),
+  doctorsAvailable: integer('doctors_available').default(0),
+  specialists: jsonb('specialists').$type<string[]>().default([]),
+  totalBeds: integer('total_beds').default(0),
+  occupiedBeds: integer('occupied_beds').default(0),
+  icuBeds: integer('icu_beds').default(0),
+  oxygenStatus: text('oxygen_status').default('NORMAL'), // NORMAL, LOW, CRITICAL
+  bloodAvailability: jsonb('blood_availability').$type<Record<string, boolean>>(),
+  diagnostics: jsonb('diagnostics').$type<Record<string, string>>(), // e.g. { "Ultrasound": "AVAILABLE", "X-Ray": "MAINTENANCE" }
+  equipment: jsonb('equipment').$type<Record<string, boolean>>(), // e.g. { "Ventilator": true }
+  lastUpdated: timestamp('last_updated').defaultNow().notNull(),
+});
+
+export const facilityReadiness = pgTable('facility_readiness', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  facilityId: uuid('facility_id').notNull().references(() => facilities.id, { onDelete: 'cascade' }),
+  score: integer('score').notNull(), // 0-100
+  status: text('status').notNull(), // GREEN, YELLOW, RED
+  queueLoad: text('queue_load').default('NORMAL'),
+  predictedWaitMins: integer('predicted_wait_mins').default(0),
+  lastUpdated: timestamp('last_updated').defaultNow().notNull(),
 });
 
 export const prescriptions = pgTable('prescriptions', {
@@ -71,15 +115,54 @@ export const referrals = pgTable('referrals', {
   patientId: uuid('patient_id')
     .notNull()
     .references(() => patients.id, { onDelete: 'cascade' }),
-  fromFacility: text('from_facility').notNull(), // e.g. "Khed Sub-Centre"
-  toFacility: text('to_facility').notNull(), // e.g. "Chakan Rural Hospital" or "Sassoon District Hospital"
+  fromFacilityId: uuid('from_facility_id').references(() => facilities.id),
+  toFacilityId: uuid('to_facility_id').references(() => facilities.id),
+  fromFacility: text('from_facility').notNull(), // Keep legacy fields for a bit
+  toFacility: text('to_facility').notNull(),
   urgency: text('urgency').notNull(), // 'EMERGENCY_108' | 'URGENT_24H' | 'ROUTINE'
   reason: text('reason').notNull(),
-  transportAssigned: text('transport_assigned').default('Self-Arranged'), // '108 Ambulance' | 'Facility Vehicle' | 'Self'
-  status: text('status').default('PENDING_TRANSFER').notNull(), // 'INITIATED' | 'IN_TRANSIT' | 'ADMITTED' | 'COMPLETED'
+  requiredSpecialty: text('required_specialty'),
+  requiredDiagnostics: jsonb('required_diagnostics').$type<string[]>(),
+  transportAssigned: text('transport_assigned').default('Self-Arranged'),
+  status: text('status').default('DRAFT').notNull(), // 'DRAFT', 'SEARCHING_FACILITY', 'AWAITING_ACCEPTANCE', 'ACCEPTED', 'IN_TRANSIT', 'ARRIVED', 'SERVICE_DELIVERED', 'COMPLETED', 'DECLINED'
   escortWorker: text('escort_worker'),
   ambulanceTrackingId: text('ambulance_tracking_id'),
+  acceptanceTime: timestamp('acceptance_time'),
+  departureTime: timestamp('departure_time'),
+  arrivalTime: timestamp('arrival_time'),
+  completionTime: timestamp('completion_time'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const careDebts = pgTable('care_debts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  patientId: uuid('patient_id').notNull().references(() => patients.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'MISSED_REFERRAL', 'MISSED_FOLLOWUP', 'TEST_NOT_DONE'
+  clinicalSeverity: text('clinical_severity').notNull(), // LOW, MODERATE, HIGH, CRITICAL
+  expectedCompletionDate: timestamp('expected_completion_date').notNull(),
+  status: text('status').default('OPEN').notNull(), // OPEN, CLOSED
+  responsiblePerson: text('responsible_person'),
+  responsibleFacility: text('responsible_facility'),
+  recommendedAction: text('recommended_action'),
+  resolvedAt: timestamp('resolved_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const careJourneys = pgTable('care_journeys', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  patientId: uuid('patient_id').notNull().references(() => patients.id, { onDelete: 'cascade' }),
+  status: text('status').default('ACTIVE').notNull(), // ACTIVE, CLOSED
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const careEvents = pgTable('care_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  journeyId: uuid('journey_id').notNull().references(() => careJourneys.id, { onDelete: 'cascade' }),
+  patientId: uuid('patient_id').notNull().references(() => patients.id, { onDelete: 'cascade' }),
+  eventType: text('event_type').notNull(), // TRIAGE, REFERRAL_GENERATED, ACCEPTED, AMBULANCE_DISPATCHED, ARRIVED, TREATED, DISCHARGED
+  description: text('description').notNull(),
+  actor: text('actor'), // e.g. ASHA, Doctor
+  eventTime: timestamp('event_time').defaultNow().notNull(),
 });
 
 export const teleconsultations = pgTable('teleconsultations', {
@@ -142,13 +225,19 @@ export const maternalNcdRecords = pgTable('maternal_ncd_records', {
 });
 
 // Relations
-export const patientsRelations = relations(patients, ({ many }) => ({
+export const patientsRelations = relations(patients, ({ one, many }) => ({
+  household: one(households, {
+    fields: [patients.householdId],
+    references: [households.id],
+  }),
   prescriptions: many(prescriptions),
   triageAssessments: many(triageAssessments),
   referrals: many(referrals),
   teleconsultations: many(teleconsultations),
   opdQueue: many(opdQueue),
   maternalNcdRecords: many(maternalNcdRecords),
+  careDebts: many(careDebts),
+  careJourneys: many(careJourneys),
 }));
 
 export const prescriptionsRelations = relations(prescriptions, ({ one }) => ({
@@ -168,3 +257,6 @@ export type TeleconsultationSelect = typeof teleconsultations.$inferSelect;
 export type OpdQueueSelect = typeof opdQueue.$inferSelect;
 export type EssentialDrugSelect = typeof essentialDrugs.$inferSelect;
 export type MaternalNcdRecordSelect = typeof maternalNcdRecords.$inferSelect;
+export type CareDebtSelect = typeof careDebts.$inferSelect;
+export type FacilitySelect = typeof facilities.$inferSelect;
+export type CareJourneySelect = typeof careJourneys.$inferSelect;
